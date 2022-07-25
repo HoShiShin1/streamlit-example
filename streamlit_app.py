@@ -1,38 +1,105 @@
-from collections import namedtuple
-import altair as alt
-import math
-import pandas as pd
-import streamlit as st
+import requests
 
-"""
-# Welcome to Streamlit!
+import json
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
+ 
 
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+str = input("分析されるユーザIDを入力さ")
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+url1 = 'https://api.booklog.jp/v2/json/'
 
+url2 = '?count=24'
 
-with st.echo(code_location='below'):
-    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
+url = url1 + str + url2
 
-    Point = namedtuple('Point', 'x y')
-    data = []
+ 
 
-    points_per_turn = total_points / num_turns
+api_res=requests.get(url)
 
-    for curr_point_num in range(total_points):
-        curr_turn, i = divmod(curr_point_num, points_per_turn)
-        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-        radius = curr_point_num / total_points
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
-        data.append(Point(x, y))
+json_res=json.loads(api_res.text)
 
-    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-        .mark_circle(color='#0068c9', opacity=0.5)
-        .encode(x='x:Q', y='y:Q'))
+ 
+
+ 
+
+data = api_res.json()
+
+books = data['books']
+
+from pandas import DataFrame
+
+ 
+
+if len(books) < 20:
+
+ print("データが不足、アプリを終了する!")
+
+else:
+
+ 
+
+ 
+
+ df = DataFrame(books)
+
+ 
+
+ import datetime
+
+ 
+
+ def format_date(date_str):
+
+     date_format = '%Y年%m月%d日'
+
+     # 2021-07-22 00:00:00 のように変換
+
+     date_dt = datetime.datetime.strptime(date_str, date_format)
+
+ 
+
+     year=date_dt.year
+
+ 
+
+     # 0埋めで2文字
+
+     month=f'{date_dt.month:02}'
+
+ 
+
+     date=f'{year}{month}'
+
+     return date
+
+ 
+
+ from bs4 import BeautifulSoup
+
+ import requests
+
+ 
+
+ for book in books:
+
+   url = book['url']
+
+   html = requests.get(url)
+
+   soup = BeautifulSoup(html.content, "html.parser")
+
+   register_date=soup.find(class_='read-day-status-area').find('span').text
+
+   print(register_date)
+ book['register_date'] = register_date
+
+book['register_mon'] = format_date(register_date)
+
+df2 = DataFrame(books)
+
+df2
+
+ 
+
+g = df2.groupby('register_mon').count()
+g
